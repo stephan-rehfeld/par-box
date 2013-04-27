@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package parbox;
+package parbox.quicksort;
 
 import java.util.Random;
 
@@ -25,10 +25,11 @@ import java.util.Random;
  *
  * @author Stephan Rehfeld
  */
-public class Quicksort {
+public class QuicksortSerial {
 
     /**
-     * The main method of the application. It's expected that size of the data array is passed as command line argument.
+     * The main method of the application. It's expected that the size of the data array is passed as command line
+     * argument.
      *
      * @param args The command line arguments.
      */

@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/quicksort-serial/quicksort-serial.iml" filepath="$PROJECT_DIR$/quicksort-serial/quicksort-serial.iml" />
+      <module fileurl="file://$PROJECT_DIR$/quicksort-simple-threads/quicksort-simple-threads.iml" filepath="$PROJECT_DIR$/quicksort-simple-threads/quicksort-simple-threads.iml" />
     </modules>
   </component>
 </project>
