@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-#include "stdafx.h"
 #include <iostream>
-#include <cstdlib>
-#include <malloc.h>
-#include <ctime>
+#include <thread>
+#include <chrono>
 
 void quicksort(  double* const values, const int begin, const int end );
 
-int _tmain(int argc, _TCHAR* argv[])
+int main()
 {
 	srand( 23 );
-	const int size = 100000000; 
+	const int size = 10000000; 
 	std::cout << size << std::endl;
 	double* const a = (double*)malloc( sizeof( double ) * size );
 	std::cout << "Generating data array: ";
@@ -35,12 +33,16 @@ int _tmain(int argc, _TCHAR* argv[])
 	std::cout << "Done" << std::endl;
 
 	std::cout << "Sorting with serial quicksort: ";
-	clock_t begin = clock();
-	quicksort( a, 0, size - 1 );
-    clock_t end = clock();
-    std::cout << "Done" << std::endl;
+	std::chrono::time_point<std::chrono::system_clock> start, end;
+	start = std::chrono::system_clock::now();
 
-    std::cout << "Serial quicksort took: " << ( ((double)(end-begin)) / CLOCKS_PER_SEC ) << "s" << std::endl;
+	quicksort( a, 0, size - 1 );
+
+    end = std::chrono::system_clock::now();
+	std::cout << "Done" << std::endl;
+	__int64 elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+
+    std::cout << "Serial quicksort took: " << ( ((double)(elapsed_milliseconds)) / 1000 ) << "s" << std::endl;
 	int x = 0;
 	std::cin >> x;
 	free( a );
