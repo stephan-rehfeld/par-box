@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-#include "stdafx.h"
 #include <iostream>
-#include <cstdlib>
-#include <malloc.h>
-#include <ctime>
+#include <thread>
+#include <vector>
 
-void quicksort(  double* const values, const int begin, const int end );
+void quicksort(  double* const values, const int begin, const int end, const int recursions  );
 
-int _tmain(int argc, _TCHAR* argv[])
+int main()
 {
 	srand( 23 );
 	const int size = 100000000; 
@@ -34,20 +32,22 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	std::cout << "Done" << std::endl;
 
-	std::cout << "Sorting with serial quicksort: ";
+	std::cout << "Sorting with parallel quicksort: ";
 	clock_t begin = clock();
-	quicksort( a, 0, size - 1 );
+	
+	quicksort( a, 0, size-1, 9 );
+
     clock_t end = clock();
     std::cout << "Done" << std::endl;
 
-    std::cout << "Serial quicksort took: " << ( ((double)(end-begin)) / CLOCKS_PER_SEC ) << "s" << std::endl;
+    std::cout << "Parallel quicksort took: " << ( ((double)(end-begin)) / CLOCKS_PER_SEC ) << "s" << std::endl;
 	int x = 0;
 	std::cin >> x;
 	free( a );
 	return 0;
 }
 
-void quicksort(  double* const values, const int begin, const int end ) {
+void quicksort(  double* const values, const int begin, const int end, const int recursions ) {
 	const int pivot = end;
 	int l = begin;
 	int r = end;
@@ -65,7 +65,22 @@ void quicksort(  double* const values, const int begin, const int end ) {
 		values[l] = values[pivot];
 		values[pivot] = temp;
 	}
-	if( l - begin > 1 ) quicksort( values, begin, l- 1 );	
-	if( end - l > 1 ) quicksort( values, l + 1, end );
+	if( recursions > 0 ) {
+		std::vector<std::thread*> threads;
+		if( l - begin > 1 ) {
+			std::thread* t = new std::thread(quicksort, values, begin, l- 1, recursions -1 );
+			threads.push_back( t );
+		}
+		if( end - l > 1 ) {
+			std::thread* t = new std::thread(quicksort, values, l + 1, end, recursions - 1 );
+			threads.push_back( t );
+		}
+		for( std::thread* t : threads ) {
+			t->join();
+			delete t;
+		}
+	} else {
+		if( l - begin > 1 ) quicksort( values, begin, l- 1, recursions -1 );	
+		if( end - l > 1 ) quicksort( values, l + 1, end, recursions - 1 );
+	}
 }
-
