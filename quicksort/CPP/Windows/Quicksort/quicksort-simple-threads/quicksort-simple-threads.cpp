@@ -18,6 +18,7 @@
 #include <thread>
 #include <vector>
 #include <chrono>
+#include <algorithm>
 
 void quicksort(  double* const values, const int begin, const int end, const int recursions  );
 
@@ -71,19 +72,21 @@ void quicksort(  double* const values, const int begin, const int end, const int
 		values[pivot] = temp;
 	}
 	if( recursions > 0 ) {
-		std::vector<std::thread*> threads;
+		std::vector<std::thread> threads;
+
 		if( l - begin > 1 ) {
-			std::thread* t = new std::thread(quicksort, values, begin, l- 1, recursions -1 );
-			threads.push_back( t );
+			std::thread t(quicksort, values, begin, l- 1, recursions -1 );
+			threads.push_back( std::move( t ) );
 		}
 		if( end - l > 1 ) {
-			std::thread* t = new std::thread(quicksort, values, l + 1, end, recursions - 1 );
-			threads.push_back( t );
+			std::thread t(quicksort, values, l + 1, end, recursions - 1 );
+			threads.push_back( std::move( t ) );
 		}
-		for( std::thread* t : threads ) {
-			t->join();
-			delete t;
-		}
+
+		std::for_each( threads.begin(), threads.end(), [](std::thread &t ) {
+			t.join();
+		});
+
 	} else {
 		if( l - begin > 1 ) quicksort( values, begin, l- 1, recursions -1 );	
 		if( end - l > 1 ) quicksort( values, l + 1, end, recursions - 1 );

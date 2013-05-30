@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "thread_pool", "thread_pool\thread_pool.vcxproj", "{5105454D-0A7A-4782-BE10-FC633AEB6EB5}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "thread_pool_benchmark", "thread_pool_benchmark\thread_pool_benchmark.vcxproj", "{E030F7EB-6193-479A-B10E-F637E351C714}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5105454D-0A7A-4782-BE10-FC633AEB6EB5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5105454D-0A7A-4782-BE10-FC633AEB6EB5}.Debug|Win32.Build.0 = Debug|Win32
+		{5105454D-0A7A-4782-BE10-FC633AEB6EB5}.Release|Win32.ActiveCfg = Release|Win32
+		{5105454D-0A7A-4782-BE10-FC633AEB6EB5}.Release|Win32.Build.0 = Release|Win32
+		{E030F7EB-6193-479A-B10E-F637E351C714}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E030F7EB-6193-479A-B10E-F637E351C714}.Debug|Win32.Build.0 = Debug|Win32
+		{E030F7EB-6193-479A-B10E-F637E351C714}.Release|Win32.ActiveCfg = Release|Win32
+		{E030F7EB-6193-479A-B10E-F637E351C714}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+EndGlobal
