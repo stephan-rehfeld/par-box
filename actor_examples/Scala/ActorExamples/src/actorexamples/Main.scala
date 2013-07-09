@@ -12,6 +12,49 @@ case class Print()
 
 case class SayHello()
 case class CreateAnotherActor()
+case class PleaseCrash()
+
+class CrashActor extends Actor {
+
+  def receive = {
+    case msg: PleaseCrash =>
+      throw new Exception( "A crash!" )
+  }
+
+
+
+  override def preRestart(reason: Throwable, message: Option[Any]) {
+    println( "pre restart" )
+  }
+
+  override def postRestart(reason: Throwable) {
+    println( "post restart" )
+  }
+}
+
+case class Start()
+case class Simulate()
+case class Input()
+
+class A extends Actor {
+
+  def receive = {
+
+    case m : Start() =>
+      // Simulation vorbereiten
+      self ! Simulate()
+
+    case m : Simulate() =>
+      // Simulation durchführen
+      self ! Simulate()
+
+
+    case m : Input() =>
+      // Wird niemals ausgeführt.
+
+
+  }
+}
 
 class SecondActor extends Actor {
 
@@ -59,6 +102,13 @@ object Main {
     val myActor2 = Await.result( ftr2, timeout.duration ).asInstanceOf[ActorRef]
 
     myActor2 ! SayHello()
+
+    val crashActor = as.actorOf( Props[CrashActor], name = "theCrashActor" )
+
+
+    crashActor ! PleaseCrash()
+
+
 
 
   }

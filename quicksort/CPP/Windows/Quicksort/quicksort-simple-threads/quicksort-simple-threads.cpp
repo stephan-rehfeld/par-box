@@ -39,7 +39,7 @@ int main()
 	std::chrono::time_point<std::chrono::system_clock> start, end;
 	start = std::chrono::system_clock::now();
 	
-	quicksort( a, 0, size-1, 9 );
+	quicksort( a, 0, size-1, 5 );
 
     end = std::chrono::system_clock::now();
     std::cout << "Done" << std::endl;
