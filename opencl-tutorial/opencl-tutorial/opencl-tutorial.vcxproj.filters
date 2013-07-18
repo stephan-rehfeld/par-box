@@ -27,5 +27,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="HelloWorld.cl" />
+    <None Include="guassian_filter.cl" />
   </ItemGroup>
 </Project>

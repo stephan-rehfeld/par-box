@@ -1,3 +1,4 @@
+
 // opencl-tutorial.cpp : Definiert den Einstiegspunkt für die Konsolenanwendung.
 //
 
@@ -6,19 +7,43 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <FreeImage.h>
 
-#define ARRAY_SIZE 10000
+size_t RoundUp(int groupSize, int globalSize)
+{
+    int r = globalSize % groupSize;
+    if(r == 0)
+    {
+        return globalSize;
+    }
+    else
+    {
+        return globalSize + groupSize - r;
+    }
+}
 
 int main()
 {
 	cl_int errNum;
-	cl_platform_id firstPlatformId;
+	cl_platform_id* platformIds;
 	cl_uint numPlatforms;
 	cl_context context;
-	
-	errNum = clGetPlatformIDs( 1, &firstPlatformId, &numPlatforms );
 
-	if( errNum != CL_SUCCESS || numPlatforms <= 0 )
+	char* imageName = "ant.png";
+
+	FreeImage_Initialise();
+	
+	errNum = clGetPlatformIDs( 0, nullptr, &numPlatforms );
+	if( errNum != CL_SUCCESS || numPlatforms <= 0 ) 
+	{
+		std::cerr << "Failed to find any OpenCL platform." << std::endl;
+		return -1;
+	}
+
+	platformIds = (cl_platform_id*)alloca( sizeof( cl_platform_id) * numPlatforms );
+
+	errNum = clGetPlatformIDs( numPlatforms, platformIds, nullptr );
+	if( errNum != CL_SUCCESS  )
 	{
         std::cerr << "Failed to find any OpenCL platform." << std::endl;
         return -1;
@@ -26,10 +51,131 @@ int main()
 
 	std::cout << "There are " << numPlatforms << " platforms on the system." << std::endl;
 
+	for( size_t i = 0; i < numPlatforms; ++i )
+	{
+		size_t nameSize = 0;
+		errNum = clGetPlatformInfo( platformIds[i], CL_PLATFORM_NAME, 0, nullptr, &nameSize );
+		if( errNum != CL_SUCCESS )
+		{
+			std::cerr << "Failed to request the name of the platform." << std::endl;
+			return -1;
+		}
+		char* name = (char*)alloca( sizeof( char ) * nameSize );
+
+		errNum = clGetPlatformInfo( platformIds[i], CL_PLATFORM_NAME, nameSize, name, nullptr );
+
+		if( errNum != CL_SUCCESS )
+		{
+			std::cerr << "Failed to request the name of the platform." << std::endl;
+			return -1;
+		}
+
+		size_t versionSize = 0;
+
+		errNum = clGetPlatformInfo( platformIds[i], CL_PLATFORM_VERSION, 0, nullptr, &versionSize );
+		if( errNum != CL_SUCCESS )
+		{
+			std::cerr << "Failed to request the version of the platform." << std::endl;
+			return -1;
+
+		}
+
+		char* version = (char*)alloca( sizeof(char) * versionSize );
+		errNum = clGetPlatformInfo( platformIds[i], CL_PLATFORM_VERSION, versionSize, version, nullptr );
+		if( errNum != CL_SUCCESS )
+		{
+			std::cerr << "Failed to request the version of the platform." << std::endl;
+			return -1;
+
+		}
+
+		std::cout << " [" << i << "] " << name << " with version: " << version << std::endl;		
+	}
+
+	size_t choosenPlatform;
+	std::cin >> choosenPlatform;
+
+	cl_uint numDevices = 0;
+
+	errNum = clGetDeviceIDs( platformIds[ choosenPlatform ], CL_DEVICE_TYPE_ALL, 0, nullptr, &numDevices ); 
+	if( errNum != CL_SUCCESS )
+	{
+		std::cerr << "Failed to request devices of the platform." << std::endl;
+		return -1;
+
+	}
+
+	cl_device_id* deviceIds = (cl_device_id*)alloca( sizeof( cl_device_id ) * numDevices );
+
+	errNum = clGetDeviceIDs( platformIds[ choosenPlatform ], CL_DEVICE_TYPE_ALL, numDevices, deviceIds, nullptr );
+
+	std::cout << "The platform has " << numDevices << " devices." << std::endl;
+
+	for( size_t i = 0; i < numDevices; ++i )
+	{
+		cl_device_type deviceType;
+
+		errNum = clGetDeviceInfo( deviceIds[i], CL_DEVICE_TYPE, sizeof( cl_device_type ), &deviceType, nullptr );
+		if( errNum != CL_SUCCESS )
+		{
+			std::cerr << "Failed to request device type." << std::endl;
+			return -1;
+		}
+
+		char* type;
+		if( deviceType == CL_DEVICE_TYPE_CPU ) {
+			type = "CPU";
+		} else if( deviceType == CL_DEVICE_TYPE_GPU ) {
+			type = "GPU";
+		} else if( deviceType == CL_DEVICE_TYPE_ACCELERATOR ) {
+			type = "ACCELERATOR";
+		} if( deviceType == CL_DEVICE_TYPE_DEFAULT ) {
+			type = "DEFAULT";
+		}  
+
+		size_t nameSize = 0;
+		clGetDeviceInfo( deviceIds[i], CL_DEVICE_NAME, 0, nullptr, &nameSize );
+		if( errNum != CL_SUCCESS )
+		{
+			std::cerr << "Failed to request device name." << std::endl;
+			return -1;
+		}
+
+		char* name = (char*)alloca( sizeof( char ) * nameSize );
+		clGetDeviceInfo( deviceIds[i], CL_DEVICE_NAME, nameSize, name, nullptr );
+		if( errNum != CL_SUCCESS )
+		{
+			std::cerr << "Failed to request device name." << std::endl;
+			return -1;
+		}
+
+		cl_bool imageSupport;
+		errNum = clGetDeviceInfo( deviceIds[i], CL_DEVICE_IMAGE_SUPPORT, sizeof( cl_bool ), &imageSupport, nullptr );
+		if( errNum != CL_SUCCESS )
+		{
+			std::cerr << "Failed to request image support." << std::endl;
+			return -1;
+		}
+
+		char* imageSupportString;
+		if( imageSupport ) {
+			imageSupportString = "with image support";
+		}
+		else
+		{
+			imageSupportString = "without image support";
+		}
+
+		std::cout << "[" << i << "] " << type << ": " << name << " " << imageSupportString <<  std::endl;
+	}
+
+	size_t choosenDevice;
+	std::cin >> choosenDevice;
+
 	cl_context_properties contextProperties[] =
 	{
 		CL_CONTEXT_PLATFORM,
-		(cl_context_properties)firstPlatformId,
+		(cl_context_properties)platformIds[choosenPlatform],
         0
 	};
 
@@ -37,7 +183,7 @@ int main()
 
 	if( errNum != CL_SUCCESS )
 	{
-        std::cout << "Could not create GPU contest, tying CPU...";
+        std::cout << "Could not create GPU context, tying CPU...";
 		context = clCreateContextFromType( contextProperties, CL_DEVICE_TYPE_CPU, nullptr, nullptr, &errNum );
 		if( errNum != CL_SUCCESS )
 		{
@@ -53,6 +199,8 @@ int main()
     size_t devicesBufferSize = -1;
 
 	errNum = clGetContextInfo( context, CL_CONTEXT_DEVICES, 0, nullptr, &devicesBufferSize );
+
+	
 
     if( errNum != CL_SUCCESS )
 	{
@@ -92,7 +240,7 @@ int main()
 
     delete [] devices;
 
-	std::ifstream kernelFile( "HelloWorld.cl", std::ios::in );
+	std::ifstream kernelFile( "guassian_filter.cl", std::ios::in );
 
 	if( !kernelFile.is_open() )
 	{
@@ -133,118 +281,143 @@ int main()
         return -1;
 	}
 
-    float result[ARRAY_SIZE];
-    float a[ARRAY_SIZE];
-    float b[ARRAY_SIZE];
+	FREE_IMAGE_FORMAT format = FreeImage_GetFileType( imageName );
+	FIBITMAP* image = FreeImage_Load( format, imageName );
 
-	for( unsigned int i = 0; i < ARRAY_SIZE; ++i )
+	FIBITMAP* temp = image;
+	image = FreeImage_ConvertTo32Bits( image );
+	FreeImage_Unload( temp );
+
+	int width = FreeImage_GetWidth( image );
+	int height = FreeImage_GetHeight( image );
+
+	char *buffer = new char[width*height*4];
+	memcpy(buffer, FreeImage_GetBits( image ), width * height * 4 );
+
+	FreeImage_Unload( image );
+
+	cl_image_format clImageFormat;
+	
+	clImageFormat.image_channel_order = CL_RGBA;
+	clImageFormat.image_channel_data_type = CL_UNORM_INT8;
+
+	cl_mem clSrcImage = clCreateImage2D( context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &clImageFormat, width, height, 0, buffer, &errNum );
+	if( errNum != CL_SUCCESS )
 	{
-        a[i] = i;
-        b[i] = i*2;
+		std::cerr << "Failed to create source image." << std::endl;
 	}
 
-	cl_mem memObjects[3] = {0,0,0};
-
-	memObjects[0] = clCreateBuffer( context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(float) * ARRAY_SIZE, a, nullptr );
-    memObjects[1] = clCreateBuffer( context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(float) * ARRAY_SIZE, b, nullptr );
-	memObjects[2] = clCreateBuffer( context, CL_MEM_READ_WRITE, sizeof( float ) * ARRAY_SIZE, nullptr, nullptr );
-
-	if( memObjects[0] == nullptr || memObjects[1] == nullptr || memObjects[2] == nullptr )
+	cl_mem clDstImage = clCreateImage2D( context, CL_MEM_WRITE_ONLY, &clImageFormat, width, height, 0, nullptr, &errNum );
+	if( errNum != CL_SUCCESS )
 	{
-        std::cerr << "Error creating memory objects." << std::endl;
-        clReleaseProgram( program );
-	    clReleaseCommandQueue( commandQueue );
-	    clReleaseContext( context );
-        return -1;
+		std::cerr << "Failed to create destination image." << std::endl;
 	}
 
-    cl_kernel kernel = clCreateKernel( program, "hello_kernel", nullptr );
+	cl_sampler sampler = clCreateSampler( context, CL_FALSE, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST, &errNum );
+	if( errNum != CL_SUCCESS )
+	{
+		std::cerr << "Failed to create sampler." << std::endl;
+	}
+
+	
+
+    cl_kernel kernel = clCreateKernel( program, "gaussian_blur", nullptr );
     if( kernel == nullptr )
 	{
         std::cerr << "Error creating kernel." << std::endl;
-        for( unsigned int i = 0; i < 3; ++i )
-	    {
-		    clReleaseMemObject( memObjects[i] );
-	    }
+
         clReleaseProgram( program );
 	    clReleaseCommandQueue( commandQueue );
 	    clReleaseContext( context );
+		clReleaseMemObject( clSrcImage );
+		clReleaseMemObject( clDstImage );
+		clReleaseSampler( sampler );
 	    return 0;
 
 	}
 
-	errNum = clSetKernelArg( kernel, 0, sizeof(cl_mem), &memObjects[0] );
-    errNum |= clSetKernelArg( kernel, 1, sizeof(cl_mem), &memObjects[1] );
-    errNum |= clSetKernelArg( kernel, 2, sizeof(cl_mem), &memObjects[2] );
+	errNum = clSetKernelArg( kernel, 0, sizeof(cl_mem), &clSrcImage );
+	errNum |= clSetKernelArg( kernel, 1, sizeof(cl_mem), &clDstImage );
+	errNum |= clSetKernelArg( kernel, 2, sizeof(cl_sampler), &sampler );
+	errNum |= clSetKernelArg( kernel, 3, sizeof(cl_int), &width );
+	errNum |= clSetKernelArg( kernel, 4, sizeof(cl_int), &height );
 
 	if( errNum != CL_SUCCESS )
 	{
         std::cerr << "Error setting kernel arguments." << std::endl;
         clReleaseKernel( kernel );
-        for( unsigned int i = 0; i < 3; ++i )
-	    {
-		    clReleaseMemObject( memObjects[i] );
-	    }
         clReleaseProgram( program );
 	    clReleaseCommandQueue( commandQueue );
 	    clReleaseContext( context );
+		clReleaseMemObject( clSrcImage );
+		clReleaseMemObject( clDstImage );
+		clReleaseSampler( sampler );
         return -1;
 	}
 
 
-	size_t globaldWorkSize[1] = {ARRAY_SIZE};
-	size_t localWorkSize[1] = {1};
+	size_t localWorkSize[2] = { 16, 16 };
+    size_t globalWorkSize[2] =  { RoundUp(localWorkSize[0], width),
+                                  RoundUp(localWorkSize[1], height) };
 
-	errNum = clEnqueueNDRangeKernel( commandQueue, kernel, 1, nullptr, globaldWorkSize, localWorkSize, 0, nullptr, nullptr );
+
+	errNum = clEnqueueNDRangeKernel( commandQueue, kernel, 2, nullptr, globalWorkSize, localWorkSize, 0, nullptr, nullptr );
 
     if( errNum != CL_SUCCESS )
 	{
         std::cerr << "Error queuing kernel for execution. " << std::endl;
-        clReleaseKernel( kernel );
-        for( unsigned int i = 0; i < 3; ++i )
-	    {
-		    clReleaseMemObject( memObjects[i] );
-	    }
+
         clReleaseProgram( program );
 	    clReleaseCommandQueue( commandQueue );
 	    clReleaseContext( context );
+		clReleaseMemObject( clSrcImage );
+		clReleaseMemObject( clDstImage );
+		clReleaseSampler( sampler );
         return -1;
 	}
 
-	errNum = clEnqueueReadBuffer( commandQueue, memObjects[2], CL_TRUE, 0, ARRAY_SIZE * sizeof( float ), result, 0, nullptr, nullptr );
+	size_t origin[3] = { 0, 0, 0 };
+	size_t region[3] = { width, height, 1 };
+
+	errNum = clEnqueueReadImage( commandQueue, clDstImage, CL_TRUE, origin, region, 0, 0, buffer, 0, nullptr, nullptr ); 
 
     if( errNum != CL_SUCCESS )
 	{
-        std::cerr << "Error reading result buffer. " << std::endl;
+        std::cerr << "Error reading image back to buffer. " << std::endl;
         clReleaseKernel( kernel );
-        for( unsigned int i = 0; i < 3; ++i )
-	    {
-		    clReleaseMemObject( memObjects[i] );
-	    }
         clReleaseProgram( program );
 	    clReleaseCommandQueue( commandQueue );
 	    clReleaseContext( context );
+		clReleaseMemObject( clSrcImage );
+		clReleaseMemObject( clDstImage );
+		clReleaseSampler( sampler );
         return -1;
+}	
+
+	format = FreeImage_GetFIFFromFilename( imageName );
+	
+	image = FreeImage_ConvertFromRawBits( (BYTE*)buffer, width, height, width*4, 32, 0xFF000000, 0x00FF0000, 0x0000FF00 );
+	BOOL saved = FreeImage_Save( format, image, "blured.png" );
+	if( !saved ) {
+		std::cerr << "Image not saved" << std::endl;
 	}
 
-	for( unsigned int i = 0; i < ARRAY_SIZE; ++i )
-	{
-        std::cout << result[i] << " ";
-	}
     std::cout << std::endl;
-    std::cout << "Program finished" << std::endl
+    std::cout << "Program finished" << std::endl;
 
 
     
 
 	clReleaseKernel( kernel );
-    for( unsigned int i = 0; i < 3; ++i )
-	{
-		clReleaseMemObject( memObjects[i] );
-	}
+
     clReleaseProgram( program );
 	clReleaseCommandQueue( commandQueue );
 	clReleaseContext( context );
+	clReleaseMemObject( clSrcImage );
+	clReleaseMemObject( clDstImage );
+	clReleaseSampler( sampler );
+
+	FreeImage_DeInitialise();
     
 
 	return 0;
